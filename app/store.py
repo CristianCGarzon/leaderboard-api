@@ -1,10 +1,20 @@
 """In-memory score store. All state lives here, per AGENTS.md."""
-from collections import defaultdict
+from collections import defaultdict, deque
+
+AUDIT_MAX_ENTRIES = 1000
+AUDIT_MAX_CHARS = 10_000
 
 
 class Store:
     def __init__(self) -> None:
         self._scores: dict[str, int] = defaultdict(int)
+        self._audit: deque[str] = deque(maxlen=AUDIT_MAX_ENTRIES)
+
+    def record_request(self, raw: str) -> None:
+        self._audit.append(raw[:AUDIT_MAX_CHARS])
+
+    def audit_log(self) -> list[str]:
+        return list(self._audit)
 
     def add(self, name: str, points: int) -> None:
         self._scores[name] += points
@@ -18,6 +28,7 @@ class Store:
 
     def reset(self) -> None:
         self._scores.clear()
+        self._audit.clear()
 
 
 STORE = Store()

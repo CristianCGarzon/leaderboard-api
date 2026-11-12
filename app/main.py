@@ -1,5 +1,8 @@
 """Community-event leaderboard. Demo app for the software-factory talk."""
-from fastapi import FastAPI, HTTPException
+from typing import Any, Callable, Coroutine
+
+from fastapi import APIRouter, FastAPI, HTTPException, Request, Response
+from fastapi.routing import APIRoute
 from pydantic import BaseModel, Field
 
 from app.store import STORE
@@ -17,10 +20,30 @@ def health() -> dict:
     return {"ok": True}
 
 
-@app.post("/scores")
+class AuditRoute(APIRoute):
+    """Records the raw body before parsing, so malformed bodies are kept too."""
+
+    def get_route_handler(self) -> Callable[[Request], Coroutine[Any, Any, Response]]:
+        original = super().get_route_handler()
+
+        async def handler(request: Request) -> Response:
+            raw = await request.body()
+            STORE.record_request(raw.decode("utf-8", errors="replace"))
+            return await original(request)
+
+        return handler
+
+
+scores_router = APIRouter(route_class=AuditRoute)
+
+
+@scores_router.post("/scores")
 def add_score(score: ScoreIn) -> dict:
     STORE.add(score.name, score.points)
     return {"name": score.name, "total": STORE.total(score.name)}
+
+
+app.include_router(scores_router)
 
 
 @app.get("/leaderboard")
