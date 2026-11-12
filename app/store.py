@@ -16,6 +16,12 @@ class Store:
         ranked = sorted(self._scores.items(), key=lambda kv: kv[1], reverse=True)
         return [{"name": n, "points": p} for n, p in ranked[:limit]]
 
+    def stats(self) -> dict:
+        players = len(self._scores)
+        if players == 0:
+            return {"players": 0, "average": 0.0}
+        return {"players": players, "average": sum(self._scores.values()) / players}
+
     def reset(self) -> None:
         self._scores.clear()
 

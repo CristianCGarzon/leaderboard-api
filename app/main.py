@@ -23,6 +23,11 @@ def add_score(score: ScoreIn) -> dict:
     return {"name": score.name, "total": STORE.total(score.name)}
 
 
+@app.get("/stats")
+def stats() -> dict:
+    return STORE.stats()
+
+
 @app.get("/leaderboard")
 def leaderboard(limit: int = 10) -> list[dict]:
     if limit < 1 or limit > 100:
